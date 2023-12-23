@@ -1,31 +1,35 @@
 import * as fs from 'fs';
 import {
+  FullResult,
+  Reporter,
   TestCase,
   TestResult,
-  Reporter,
-  FullResult,
 } from '@playwright/test/reporter';
+import {
+  assertIsExpectedStatus,
+  assertIsUnexpectedStatus,
+  CustomTestResult,
+  ExpectedStatus,
+  Summary,
+  UnexpectedStatus
+} from "./types";
 
-export interface Summary {
-  durationInMS: number;
-  passed: string[];
-  skipped: string[];
-  failed: string[];
-  warned: string[];
-  interrupted: string[];
-  timedOut: string[];
-  status: FullResult['status'] | 'unknown' | 'warned' | 'skipped';
-}
 
 class JSONSummaryReporter implements Reporter, Summary {
   durationInMS = -1;
-  passed: string[] = [];
-  skipped: string[] = [];
-  failed: string[] = [];
-  warned: string[] = [];
-  interrupted: string[] = [];
-  timedOut: string[] = [];
-
+  expected: Record<ExpectedStatus, CustomTestResult[]> = {
+    passed: [],
+    failed: [],
+    skipped: [],
+  };
+  unexpected: Record<UnexpectedStatus, CustomTestResult[]> = {
+    passed: [],
+    failed: [],
+    flaky: [],
+    skipped: [],
+    interrupted: [],
+    timedOut: [],
+  };
   status: Summary['status'] = 'unknown';
   startedAt = 0;
 
@@ -45,42 +49,89 @@ class JSONSummaryReporter implements Reporter, Summary {
         fileName.push(s);
       }
     }
+    const thisResult = this.getResult(fileName, test, title);
 
-    // This will publish the file name + line number test begins on
+    const status = result.status;
+    const outcome = test.outcome();
+    switch (outcome) {
+      case 'unexpected':
+        assertIsUnexpectedStatus(status);
+        this['unexpected'][status].push(thisResult);
+        break;
+      case 'flaky':
+        this['unexpected']['flaky'].push(thisResult);
+        break;
+      case 'expected':
+        assertIsExpectedStatus(status);
+        this['expected'][status].push(thisResult);
+        break;
+      case 'skipped':
+        this['expected']['skipped'].push(thisResult);
+        break;
+      default:
+        exhaustiveGuard(outcome);
+    }
+  }
+
+  private getResult(fileName: any[], test: TestCase, title: any[]) {
+    // the file name + line number test begins on
     const z = `${fileName[0]}:${test.location.line}:${test.location.column}`;
 
-    // Using the t variable in the push will push a full test name + test description
+    //  a full test name + test description
     const t = title.join(' > ');
 
-    const status =
-      !['passed', 'skipped'].includes(result.status) && t.includes('@warn')
-        ? 'warned'
-        : result.status;
-    this[status].push(z);
+    // takes the title array and regex matches the last item for the TR CaseID
+    const titleElement = title[title.length - 1];
+    // "C", followed by at least 4 numbers, followed by a comma or space, or nothing, repeated
+    const caseIdRegex = /(C\d{4,}(,\s?)?)+/g;
+    const c = titleElement.match(caseIdRegex)?.[0].trim() ?? "No Case ID Found";
+    const thisResult: CustomTestResult = {
+      name: t,
+      address: z,
+      caseId: c,
+    };
+    return thisResult;
   }
 
   onEnd(result: FullResult) {
+    const filePath = './summary.json';
     this.durationInMS = Date.now() - this.startedAt;
     this.status = result.status;
 
-    // removing duplicate tests from passed array
-    this.passed = this.passed.filter((element, index) => {
-      return this.passed.indexOf(element) === index;
-    });
-
-    // removing duplicate and flakey (passed on a retry) tests from the failed array
-    this.failed = this.failed.filter((element, index) => {
-      let isRealFailure = false;
-      const isNotFlaky = !this.passed.includes(element);
-      if (isNotFlaky) {
-        const isNotDuplicate = this.failed.indexOf(element) === index;
-        isRealFailure = isNotDuplicate;
-      }
-      return isRealFailure;
-    });
-
-    fs.writeFileSync('./summary.json', JSON.stringify(this, null, '  '));
+    fs.writeFileSync(filePath, JSON.stringify(this, null, '  '));
   }
 }
 
 export default JSONSummaryReporter;
+
+
+/**
+ * This function is used to exhaustively check for all possible values of a union type.
+ * It is used in a switch statement to ensure that all possible values of a union type are
+ * handled. If a new value is added to the union type, the compiler will complain that the
+ * switch statement is not exhaustive.
+ * @example
+ * type MyUnion = 'a' | 'b' | 'c';
+ * const myUnion: MyUnion = 'a';
+ * switch (myUnion) {
+ *  case 'a':
+ *  // do something
+ *  break;
+ *  case 'b':
+ *  // do something
+ *  break;
+ *  case 'c':
+ *  // do something
+ *  break;
+ *  default:
+ *  exhaustiveGuard(myUnion); // this will throw a compiler error if a new value is added to MyUnion
+ *  break;
+ *  }
+ */
+function exhaustiveGuard(_value: never): never {
+  throw new Error(
+    `ERROR! Reached forbidden guard function with unexpected value: ${JSON.stringify(
+      _value
+    )}`
+  );
+}

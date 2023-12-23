@@ -1,9 +1,10 @@
 {
   "name": "playwright-json-summary-reporter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A Simple Playwright Reporter",
   "license": "MIT",
-  "repository": "playwrightsolutions/playwright-json-summary-reporter",
+  "repository": "graffhyrum/playwright-json-summary-reporter",
+  "author": "graffhyrum",
   "main": "./build/src/index.js",
   "keywords": [
     "playwright",

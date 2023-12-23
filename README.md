@@ -1,13 +1,15 @@
 # playwright-json-summary-reporter
 
-![npm (scoped)](https://img.shields.io/npm/v/playwright-json-summary-reporter)
 
-This package can be installed to generate a simple `summary.json` file that can be used as apart of a `Playwright Test` automation framework. My main use case for building this is to have quick access to a list of failed or succeeded tests for re-running failures (outside of playwright's retry functionality). I also use this as a way to quickly identify if all tests passed within a github action.
+
+This package can be installed to generate a simple `summary.json` file that can be used as a part of a `Playwright Test` automation framework. My main use case for building this is to have quick access to a list of failed or succeeded tests for re-running failures (outside of playwright's retry functionality). I also use this as a way to quickly identify if all tests passed within a GitHub action.
+
+Forked from [playwright-json-summary-reporter](https://github.com/playwrightsolutions/playwright-json-summary-reporter)
 
 ## Install
 
 ```bash
-npm install playwright-json-summary-reporter --save-dev
+git clone https://github.com/graffhyrum/playwright-json-summary-reporter.git && cd playwright-json-summary-reporter && npm install
 ```
 
 ## Usage
@@ -51,6 +53,9 @@ Now when you run a test there should be a new file `summary.json` that gets save
   "failed": [],
   "warned": [],
   "timedOut": [],
+    "flakey": [
+    "tests.spec.ts:18:7"
+  ],
   "status": "passed",
   "startedAt": 1674431153277
 }
