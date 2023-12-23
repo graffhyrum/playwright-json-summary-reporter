@@ -11,9 +11,8 @@ import {
   CustomTestResult,
   ExpectedStatus,
   Summary,
-  UnexpectedStatus
-} from "./types";
-
+  UnexpectedStatus,
+} from './types';
 
 class JSONSummaryReporter implements Reporter, Summary {
   durationInMS = -1;
@@ -38,8 +37,8 @@ class JSONSummaryReporter implements Reporter, Summary {
   }
 
   onTestEnd(test: TestCase, result: TestResult) {
-    const title = [];
-    const fileName = [];
+    const title: string[] = [];
+    const fileName: string[] = [];
     let clean = true;
     for (const s of test.titlePath()) {
       if (s === '' && clean) continue;
@@ -73,7 +72,7 @@ class JSONSummaryReporter implements Reporter, Summary {
     }
   }
 
-  private getResult(fileName: any[], test: TestCase, title: any[]) {
+  private getResult(fileName: string[], test: TestCase, title: string[]) {
     // the file name + line number test begins on
     const z = `${fileName[0]}:${test.location.line}:${test.location.column}`;
 
@@ -84,7 +83,7 @@ class JSONSummaryReporter implements Reporter, Summary {
     const titleElement = title[title.length - 1];
     // "C", followed by at least 4 numbers, followed by a comma or space, or nothing, repeated
     const caseIdRegex = /(C\d{4,}(,\s?)?)+/g;
-    const c = titleElement.match(caseIdRegex)?.[0].trim() ?? "No Case ID Found";
+    const c = titleElement.match(caseIdRegex)?.[0].trim() ?? 'No Case ID Found';
     const thisResult: CustomTestResult = {
       name: t,
       address: z,
@@ -103,7 +102,6 @@ class JSONSummaryReporter implements Reporter, Summary {
 }
 
 export default JSONSummaryReporter;
-
 
 /**
  * This function is used to exhaustively check for all possible values of a union type.
